@@ -6,20 +6,17 @@ const Task = require("../models/Task");
 const router = express.Router();
 
 // GET: Fetch all tasks
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
     const tasks = await Task.find().sort({ createdAt: -1 });
     res.json({ success: true, count: tasks.length, data: tasks });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch tasks",
-    });
+    next(error);
   }
 });
 
 // GET: Fetch one task
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).json({
@@ -39,10 +36,7 @@ router.get("/:id", async (req, res) => {
 
     res.json({ success: true, data: task });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch task",
-    });
+    next(error);
   }
 });
 
@@ -130,7 +124,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE: Delete a task
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).json({
@@ -153,10 +147,7 @@ router.delete("/:id", async (req, res) => {
       message: "Task deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to delete task",
-    });
+    next(error);
   }
 });
 

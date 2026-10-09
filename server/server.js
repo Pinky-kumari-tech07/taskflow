@@ -25,14 +25,59 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+
 // Task CRUD routes
 app.use("/api/tasks", taskRoutes);
 
-// Start server after connecting to MongoDB
+// 404 handler — catches requests that don't match any route
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+  });
+});
+
+// Centralized error handler
+// Must have exactly four parameters for Express to recognize it.
+app.use((err, req, res, next) => {
+  // Log full error details on the server, never in the response.
+  console.error(
+    `[Error] ${req.method} ${req.originalUrl} —`,
+    err
+  );
+
+  // Accept only valid HTTP error status codes.
+  const rawStatus = err.statusCode ?? err.status;
+
+  const statusCode =
+    Number.isInteger(rawStatus) &&
+    rawStatus >= 400 &&
+    rawStatus <= 599
+      ? rawStatus
+      : 500;
+
+  // Return client-error messages for 4xx errors.
+  // Hide internal details for all 5xx errors.
+  const message =
+    statusCode < 500
+      ? err.message
+      : "An unexpected error occurred. Please try again.";
+
+  res.status(statusCode).json({
+    success: false,
+    message,
+  });
+});
+
+// Start the server after connecting to MongoDB
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
   try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error("MONGODB_URI is missing from the environment configuration.");
+    }
+
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("MongoDB connected successfully!");
 
