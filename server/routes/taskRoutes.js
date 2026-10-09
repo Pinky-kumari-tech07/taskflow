@@ -9,7 +9,12 @@ const router = express.Router();
 router.get("/", async (req, res, next) => {
   try {
     const tasks = await Task.find().sort({ createdAt: -1 });
-    res.json({ success: true, count: tasks.length, data: tasks });
+
+    res.json({
+      success: true,
+      count: tasks.length,
+      data: tasks,
+    });
   } catch (error) {
     next(error);
   }
@@ -34,18 +39,21 @@ router.get("/:id", async (req, res, next) => {
       });
     }
 
-    res.json({ success: true, data: task });
+    res.json({
+      success: true,
+      data: task,
+    });
   } catch (error) {
     next(error);
   }
 });
 
 // POST: Create a task
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const { title, description, status, dueDate } = req.body;
 
-    if (!title || !title.trim()) {
+    if (typeof title !== "string" || !title.trim()) {
       return res.status(400).json({
         success: false,
         message: "Task title is required",
@@ -53,23 +61,23 @@ router.post("/", async (req, res) => {
     }
 
     const task = await Task.create({
-      title,
+      title: title.trim(),
       description,
       status,
       dueDate: dueDate || null,
     });
 
-    res.status(201).json({ success: true, data: task });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
+    res.status(201).json({
+      success: true,
+      data: task,
     });
+  } catch (error) {
+    next(error);
   }
 });
 
 // PUT: Update a task
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) {
       return res.status(400).json({
@@ -78,7 +86,13 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    const allowedFields = ["title", "description", "status", "dueDate"];
+    const allowedFields = [
+      "title",
+      "description",
+      "status",
+      "dueDate",
+    ];
+
     const updates = {};
 
     for (const field of allowedFields) {
@@ -87,11 +101,18 @@ router.put("/:id", async (req, res) => {
       }
     }
 
-    if (typeof updates.title === "string" && !updates.title.trim()) {
+    if (
+      Object.prototype.hasOwnProperty.call(updates, "title") &&
+      (typeof updates.title !== "string" || !updates.title.trim())
+    ) {
       return res.status(400).json({
         success: false,
         message: "Task title cannot be empty",
       });
+    }
+
+    if (typeof updates.title === "string") {
+      updates.title = updates.title.trim();
     }
 
     if (Object.keys(updates).length === 0) {
@@ -104,7 +125,10 @@ router.put("/:id", async (req, res) => {
     const task = await Task.findByIdAndUpdate(
       req.params.id,
       updates,
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!task) {
@@ -114,12 +138,12 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    res.json({ success: true, data: task });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
+    res.json({
+      success: true,
+      data: task,
     });
+  } catch (error) {
+    next(error);
   }
 });
 
