@@ -35,9 +35,13 @@ app.use((req, res) => {
 
 // Centralized error handler
 app.use((err, req, res, next) => {
-  console.error(`[Error] ${req.method} ${req.originalUrl}`, err);
+  console.error(
+    `[Error] ${req.method} ${req.originalUrl}`,
+    err
+  );
 
   const rawStatus = err.statusCode ?? err.status;
+
   const statusCode =
     Number.isInteger(rawStatus) &&
     rawStatus >= 400 &&
@@ -56,4 +60,5 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Export the Express app for tests and Vercel
 module.exports = app;
